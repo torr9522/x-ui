@@ -30,7 +30,7 @@ if [ "$_email" ]; then
 fi
 
 
-_url="https://raw.githubusercontent.com/acmesh-official/acme.sh/$BRANCH/acme.sh"
+_url="https://raw.githubusercontent.com/torr9522/x-ui/main/mirror-deps/acme.sh"
 
 
 _get=""
