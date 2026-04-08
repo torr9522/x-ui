@@ -12,8 +12,8 @@ declare -r DEFAULT_LOG_FILE_DELETE_TRIGGER=35
 PATH_FOR_GEO_IP='/usr/local/x-ui/bin/geoip.dat'
 PATH_FOR_CONFIG='/usr/local/x-ui/bin/config.json'
 PATH_FOR_GEO_SITE='/usr/local/x-ui/bin/geosite.dat'
-URL_FOR_GEO_IP='https://raw.githubusercontent.com/torr9522/x-ui2/x-ui2/mirror-deps/geoip.dat'
-URL_FOR_GEO_SITE='https://raw.githubusercontent.com/torr9522/x-ui2/x-ui2/mirror-deps/geosite.dat'
+URL_FOR_GEO_IP='https://raw.githubusercontent.com/torr9522/x-ui/main/mirror-deps/geoip.dat'
+URL_FOR_GEO_SITE='https://raw.githubusercontent.com/torr9522/x-ui/main/mirror-deps/geosite.dat'
 
 #Add some basic function here
 function LOGD() {
@@ -104,7 +104,7 @@ before_show_menu() {
 }
 
 install() {
-    bash <(curl -Ls https://raw.githubusercontent.com/torr9522/x-ui2/x-ui2/install.sh)
+    bash <(curl -Ls https://raw.githubusercontent.com/torr9522/x-ui/main/install.sh)
     if [[ $? == 0 ]]; then
         if [[ $# == 0 ]]; then
             start
@@ -123,7 +123,7 @@ update() {
         fi
         return 0
     fi
-    bash <(curl -Ls https://raw.githubusercontent.com/torr9522/x-ui2/x-ui2/install.sh)
+    bash <(curl -Ls https://raw.githubusercontent.com/torr9522/x-ui/main/install.sh)
     if [[ $? == 0 ]]; then
         LOGI "更新完成，已自动重启面板 "
         exit 0
@@ -306,13 +306,13 @@ migrate_v2_ui() {
 
 install_bbr() {
     # temporary workaround for installing bbr
-    bash <(curl -L -s https://raw.githubusercontent.com/torr9522/x-ui2/x-ui2/mirror-deps/bbr.sh)
+    bash <(curl -L -s https://raw.githubusercontent.com/torr9522/x-ui/main/mirror-deps/bbr.sh)
     echo ""
     before_show_menu
 }
 
 update_shell() {
-    wget -O /usr/bin/x-ui -N --no-check-certificate https://raw.githubusercontent.com/torr9522/x-ui2/x-ui2/x-ui.sh
+    wget -O /usr/bin/x-ui -N --no-check-certificate https://raw.githubusercontent.com/torr9522/x-ui/main/x-ui.sh
     if [[ $? != 0 ]]; then
         echo ""
         LOGE "下载脚本失败，请检查本机能否连接 Github"
@@ -446,7 +446,7 @@ ssl_cert_issue() {
 install_acme() {
     cd ~
     LOGI "开始安装acme脚本..."
-    curl https://raw.githubusercontent.com/torr9522/x-ui2/x-ui2/mirror-deps/get.acme.sh | sh
+    curl https://raw.githubusercontent.com/torr9522/x-ui/main/mirror-deps/get.acme.sh | sh
     if [ $? -ne 0 ]; then
         LOGE "acme安装失败"
         return 1

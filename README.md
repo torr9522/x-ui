@@ -1,4 +1,4 @@
-# x-ui2 mirror
+# x-ui mirror
 
 This repository is a self-hosted mirror of the install/update assets needed by
 the `x-ui` shell installer and management script.
@@ -20,5 +20,5 @@ dependencies from this repository instead of the original upstream locations.
 Install from this mirror:
 
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/torr9522/x-ui2/x-ui2/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/torr9522/x-ui/main/install.sh)
 ```
