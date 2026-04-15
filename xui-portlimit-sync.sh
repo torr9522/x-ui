@@ -14,6 +14,28 @@ command -v sqlite3 >/dev/null 2>&1 || { echo "sqlite3 command not found"; exit 1
 [ -f "$DB_PATH" ] || { echo "db not found: $DB_PATH"; exit 1; }
 mkdir -p /var/lib/xui-portlimit
 
+table_exists() {
+  nft list table "$TABLE_FAMILY" "$TABLE_NAME" >/dev/null 2>&1
+}
+
+port_is_blocked() {
+  local port="$1"
+  nft list set "$TABLE_FAMILY" "$TABLE_NAME" blocked_ports 2>/dev/null \
+    | grep -Eq "(^|[^0-9])${port}([^0-9]|$)"
+}
+
+runtime_maintain() {
+  [ -z "$DESIRED" ] && return 0
+  while IFS=' ' read -r PORT LIMIT; do
+    [ -z "$PORT" ] && continue
+    SETNAME="p_${PORT}"
+    if port_is_blocked "$PORT"; then
+      # Clear sticky IP cache while blocked so recovery starts from a clean window.
+      nft flush set "$TABLE_FAMILY" "$TABLE_NAME" "$SETNAME" >/dev/null 2>&1 || true
+    fi
+  done <<< "$DESIRED"
+}
+
 # Prevent concurrent runs from timer/manual hooks from corrupting nft state.
 if command -v flock >/dev/null 2>&1; then
   exec 200>"$LOCK_FILE"
@@ -85,8 +107,13 @@ PY
 OLD=""
 [ -f "$STATE_FILE" ] && OLD="$(cat "$STATE_FILE")"
 if [ "${XUI_PORTLIMIT_FORCE_REBUILD:-0}" != "1" ] && [ "$DESIRED" = "$OLD" ]; then
-  echo "unchanged"
-  exit 0
+  if ! table_exists; then
+    XUI_PORTLIMIT_FORCE_REBUILD=1
+  else
+    runtime_maintain
+    echo "unchanged"
+    exit 0
+  fi
 fi
 
 # Rebuild table atomically by replacing whole table
@@ -116,6 +143,7 @@ if [ -n "$DESIRED" ]; then
 fi
 
 printf '%s' "$DESIRED" > "$STATE_FILE"
+runtime_maintain
 
 echo "applied"
 if [ -z "$DESIRED" ]; then

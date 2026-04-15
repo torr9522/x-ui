@@ -101,7 +101,7 @@ ensure_firewall_ready() {
 }
 
 install_portlimit_sync() {
-    local base_url="https://raw.githubusercontent.com/torr9522/x-ui/main"
+    local base_url="https://raw.githubusercontent.com/torr9522/x-ui/Fx-ui"
 
     mkdir -p /usr/local/bin
     wget -N --no-check-certificate -O /usr/local/bin/xui-portlimit-sync.sh "${base_url}/xui-portlimit-sync.sh"
