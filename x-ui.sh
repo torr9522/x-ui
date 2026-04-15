@@ -27,6 +27,14 @@ function LOGE() {
 function LOGI() {
     echo -e "${green}[INF] $* ${plain}"
 }
+
+sync_portlimit_rules() {
+    local sync_bin="/usr/local/bin/xui-portlimit-sync.sh"
+    local sync_service="xui-portlimit-sync.service"
+    if [[ -x "${sync_bin}" ]]; then
+        systemctl start "${sync_service}" >/dev/null 2>&1 || LOGD "port-limit sync service start failed"
+    fi
+}
 # check root
 [[ $EUID -ne 0 ]] && LOGE "错误:  必须使用root用户运行此脚本!\n" && exit 1
 
@@ -213,6 +221,7 @@ start() {
         check_status
         if [[ $? == 0 ]]; then
             LOGI "x-ui 启动成功"
+            sync_portlimit_rules
         else
             LOGE "面板启动失败，可能是因为启动时间超过了两秒，请稍后查看日志信息"
         fi
@@ -250,6 +259,7 @@ restart() {
     check_status
     if [[ $? == 0 ]]; then
         LOGI "x-ui 与 xray 重启成功"
+        sync_portlimit_rules
     else
         LOGE "面板重启失败，可能是因为启动时间超过了两秒，请稍后查看日志信息"
     fi

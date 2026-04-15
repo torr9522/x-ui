@@ -1,0 +1,11 @@
+[Unit]
+Description=Run x-ui port-limit sync periodically
+
+[Timer]
+OnBootSec=20s
+OnUnitActiveSec=15s
+Unit=xui-portlimit-sync.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target

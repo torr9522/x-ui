@@ -1,0 +1,9 @@
+[Unit]
+Description=Sync x-ui inbound ports to nftables port-limit set
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment=XUI_PORTLIMIT_TIMEOUT=5m
+ExecStart=/usr/local/bin/xui-portlimit-sync.sh

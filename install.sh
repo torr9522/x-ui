@@ -73,10 +73,56 @@ fi
 
 install_base() {
     if [[ x"${release}" == x"centos" ]]; then
-        yum install wget curl tar jq -y
+        yum install wget curl tar jq nftables sqlite python3 -y
     else
-        apt install wget curl tar jq -y
+        apt update -y
+        apt install wget curl tar jq nftables sqlite3 python3 -y
     fi
+}
+
+ensure_firewall_ready() {
+    if ! command -v nft >/dev/null 2>&1; then
+        echo -e "${yellow}未检测到 nftables，正在自动安装...${plain}"
+        if [[ x"${release}" == x"centos" ]]; then
+            yum install nftables -y
+        else
+            apt update -y
+            apt install nftables -y
+        fi
+    fi
+
+    if command -v modprobe >/dev/null 2>&1; then
+        modprobe nf_tables >/dev/null 2>&1 || true
+    fi
+
+    if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q '^nftables\.service'; then
+        systemctl enable --now nftables >/dev/null 2>&1 || true
+    fi
+}
+
+install_portlimit_sync() {
+    local base_url="https://raw.githubusercontent.com/torr9522/x-ui/main"
+
+    mkdir -p /usr/local/bin
+    wget -N --no-check-certificate -O /usr/local/bin/xui-portlimit-sync.sh "${base_url}/xui-portlimit-sync.sh"
+    if [[ $? -ne 0 ]]; then
+        echo -e "${red}涓嬭浇 xui-portlimit-sync.sh 澶辫触${plain}"
+        return 1
+    fi
+    chmod +x /usr/local/bin/xui-portlimit-sync.sh
+
+    wget -N --no-check-certificate -O /etc/systemd/system/xui-portlimit-sync.service "${base_url}/xui-portlimit-sync.service"
+    wget -N --no-check-certificate -O /etc/systemd/system/xui-portlimit-sync.timer "${base_url}/xui-portlimit-sync.timer"
+    if [[ $? -ne 0 ]]; then
+        echo -e "${red}涓嬭浇 xui-portlimit-sync systemd 鏂囦欢澶辫触${plain}"
+        return 1
+    fi
+
+    sed -i 's/\r$//' /usr/local/bin/xui-portlimit-sync.sh /etc/systemd/system/xui-portlimit-sync.service /etc/systemd/system/xui-portlimit-sync.timer
+
+    systemctl daemon-reload
+    systemctl enable --now xui-portlimit-sync.timer
+    systemctl start xui-portlimit-sync.service || true
 }
 
 #This function will be called when user installed x-ui out of sercurity
@@ -152,6 +198,7 @@ install_x-ui() {
     systemctl daemon-reload
     systemctl enable x-ui
     systemctl start x-ui
+    install_portlimit_sync
     echo -e "${green}x-ui v${last_version}${plain} 安装完成，面板已启动，"
     echo -e ""
     echo -e "本次安装/更新已重置面板登录信息:"
@@ -182,4 +229,5 @@ install_x-ui() {
 
 echo -e "${green}开始安装${plain}"
 install_base
+ensure_firewall_ready
 install_x-ui $1
