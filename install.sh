@@ -100,6 +100,49 @@ ensure_firewall_ready() {
     fi
 }
 
+install_iptables_shim() {
+    mkdir -p /usr/local/x-ui/shims
+
+    cat >/usr/local/x-ui/shims/iptables <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+MODE="${XUI_IPTABLES_MODE:-off}"
+if [[ "${MODE}" == "off" ]]; then
+    # Return synthetic data for legacy x-ui iplimit checks to avoid noisy errors.
+    if [[ "${*}" == *"-L INPUT"* ]]; then
+        echo "Chain INPUT (policy ACCEPT)"
+        echo "target     prot opt source               destination"
+        echo "xui-block-chain  tcp  --  0.0.0.0/0      0.0.0.0/0"
+    elif [[ "${*}" == *"-nvL xui-block-chain"* ]]; then
+        echo "Chain xui-block-chain (0 references)"
+        echo "pkts bytes target     prot opt in     out     source               destination"
+        echo "0    0 DROP       tcp  --  *      *       0.0.0.0/0            0.0.0.0/0"
+    fi
+    exit 0
+fi
+exec /usr/sbin/iptables "$@"
+EOF
+    chmod +x /usr/local/x-ui/shims/iptables
+
+    cat >/usr/local/x-ui/shims/ip6tables <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+MODE="${XUI_IPTABLES_MODE:-off}"
+if [[ "${MODE}" == "off" ]]; then
+    exit 0
+fi
+exec /usr/sbin/ip6tables "$@"
+EOF
+    chmod +x /usr/local/x-ui/shims/ip6tables
+
+    mkdir -p /etc/systemd/system/x-ui.service.d
+    cat >/etc/systemd/system/x-ui.service.d/10-iptables-shim.conf <<'EOF'
+[Service]
+Environment=XUI_IPTABLES_MODE=off
+Environment=PATH=/usr/local/x-ui/shims:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+EOF
+}
+
 install_portlimit_sync() {
     local base_url="https://raw.githubusercontent.com/torr9522/x-ui/Fx-ui"
 
@@ -198,6 +241,9 @@ install_x-ui() {
     systemctl daemon-reload
     systemctl enable x-ui
     systemctl start x-ui
+    install_iptables_shim
+    systemctl daemon-reload
+    systemctl restart x-ui
     install_portlimit_sync
     echo -e "${green}x-ui v${last_version}${plain} 安装完成，面板已启动，"
     echo -e ""
